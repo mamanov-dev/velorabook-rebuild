@@ -15,10 +15,9 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(600) // 10 минут по умолчанию
+  const [timeLeft, setTimeLeft] = useState(600) // 10 минут
   const [canResend, setCanResend] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
-  const [statusChecked, setStatusChecked] = useState(false)
   
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -53,42 +52,17 @@ export default function VerifyEmailPage() {
     }
   }, [resendCooldown])
 
-  // 🔧 ИСПРАВЛЕНО: Проверяем статус кода с задержкой и fallback
+  // Проверяем статус кода при загрузке
   useEffect(() => {
-    if (session?.user?.email && !statusChecked) {
-      console.log('🔍 Starting code status check for:', session.user.email)
-      
-      // Даем время серверу сохранить код, затем проверяем
-      const timer = setTimeout(async () => {
-        try {
-          await checkCodeStatus()
-          setStatusChecked(true)
-          
-          // 🔧 FALLBACK: Если после проверки timeLeft все еще 0, ставим дефолт
-          setTimeout(() => {
-            if (timeLeft <= 0) {
-              console.log('🔧 Fallback: setting default time (600s)')
-              setTimeLeft(590) // Чуть меньше 10 минут на всякий случай
-            }
-          }, 500)
-          
-        } catch (error) {
-          console.error('❌ Status check failed, using fallback time')
-          setTimeLeft(590) // Fallback время
-          setStatusChecked(true)
-        }
-      }, 3000) // Ждем 3 секунды перед проверкой
-      
-      return () => clearTimeout(timer)
+    if (session?.user?.email) {
+      checkCodeStatus()
     }
-  }, [session?.user?.email, statusChecked])
+  }, [session?.user?.email])
 
   const checkCodeStatus = async () => {
     if (!session?.user?.email) return
 
     try {
-      console.log('🔍 Requesting status for:', session.user.email)
-      
       const response = await fetch('/api/auth/verification-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,30 +70,13 @@ export default function VerifyEmailPage() {
       })
 
       const data = await response.json()
-      console.log('🔍 Status response:', data)
-      
       if (data.success) {
-        // 🔧 ИСПРАВЛЕНО: Проверяем что expiresIn разумное число
-        const expiresIn = data.expiresIn || 0
-        
-        if (expiresIn > 0 && expiresIn <= 600) {
-          console.log('✅ Setting timeLeft to:', expiresIn)
-          setTimeLeft(expiresIn)
-        } else {
-          console.log('⚠️ Invalid expiresIn:', expiresIn, 'using fallback')
-          setTimeLeft(590) // Fallback
-        }
-        
+        setTimeLeft(data.expiresIn || 0)
         setCanResend(data.canResend)
         setResendCooldown(data.resendCooldown || 0)
-      } else {
-        console.log('⚠️ Status check unsuccessful, using fallback time')
-        setTimeLeft(590)
       }
     } catch (error) {
-      console.error('❌ Status check error:', error)
-      // 🔧 FALLBACK: При ошибке ставим дефолтное время
-      setTimeLeft(590)
+      console.error('Error checking code status:', error)
     }
   }
 
@@ -185,8 +142,6 @@ export default function VerifyEmailPage() {
     setError('')
 
     try {
-      console.log('🔍 Verifying code:', verificationCode)
-      
       const response = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,7 +210,6 @@ export default function VerifyEmailPage() {
         setCanResend(false)
         setResendCooldown(60) // 1 минута cooldown
         setCode(['', '', '', '', '', '']) // Очищаем поля
-        setStatusChecked(false) // Сброс статуса для повторной проверки
         inputRefs.current[0]?.focus()
         
         // Показываем уведомление об успехе
@@ -335,13 +289,6 @@ export default function VerifyEmailPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Debug информация (только в development) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-              Debug: timeLeft={timeLeft}, statusChecked={statusChecked}, canResend={canResend}
-            </div>
-          )}
-
           {/* Код верификации */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-4">
@@ -382,7 +329,7 @@ export default function VerifyEmailPage() {
               <span className="text-sm">
                 {timeLeft > 0 
                   ? `Код действителен еще ${formatTime(timeLeft)}`
-                  : 'Код истек - запросите новый'
+                  : 'Код истек'
                 }
               </span>
             </div>
@@ -391,7 +338,7 @@ export default function VerifyEmailPage() {
           {/* Verify Button */}
           <button
             onClick={() => handleVerify()}
-            disabled={isLoading || code.some(digit => digit === '') || timeLeft <= 0}
+            disabled={isLoading || code.some(digit => digit === '')}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all mb-4"
           >
             {isLoading ? (
@@ -399,8 +346,6 @@ export default function VerifyEmailPage() {
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 Проверяем код...
               </div>
-            ) : timeLeft <= 0 ? (
-              'Код истек'
             ) : (
               'Подтвердить email'
             )}
