@@ -20,6 +20,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [requiresVerification, setRequiresVerification] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -87,21 +88,50 @@ export default function SignUpPage() {
       }
 
       setSuccess(true)
-      
-      // Автоматически входим в систему после успешной регистрации
-      setTimeout(async () => {
-        const result = await signIn('credentials', {
-          email: formData.email,
-          password: formData.password,
-          redirect: false,
-        })
 
-        if (result?.error) {
-          setError('Аккаунт создан, но произошла ошибка входа. Попробуйте войти вручную.')
-        } else {
-          router.push('/dashboard')
-        }
-      }, 2000)
+      // Проверяем, требуется ли верификация
+      if (data.requiresVerification) {
+        setRequiresVerification(true)
+        
+        // Автоматически входим в систему (но пользователь будет неверифицирован)
+        setTimeout(async () => {
+          try {
+            const result = await signIn('credentials', {
+              email: formData.email,
+              password: formData.password,
+              redirect: false,
+            })
+
+            if (result?.error) {
+              setError('Аккаунт создан, но произошла ошибка входа. Попробуйте войти вручную.')
+              setTimeout(() => router.push('/auth/signin'), 2000)
+            } else {
+              // Перенаправляем на страницу верификации
+              router.push('/auth/verify-email')
+            }
+          } catch (signInError) {
+            console.error('Sign in error:', signInError)
+            setError('Аккаунт создан. Войдите вручную для завершения верификации.')
+            setTimeout(() => router.push('/auth/signin'), 2000)
+          }
+        }, 1500)
+      } else {
+        // Если верификация не требуется, обычный автологин
+        setTimeout(async () => {
+          const result = await signIn('credentials', {
+            email: formData.email,
+            password: formData.password,
+            redirect: false,
+          })
+
+          if (result?.error) {
+            setError('Аккаунт создан, но произошла ошибка входа. Попробуйте войти вручную.')
+            setTimeout(() => router.push('/auth/signin'), 2000)
+          } else {
+            router.push('/dashboard')
+          }
+        }, 2000)
+      }
 
     } catch (error) {
       if (error instanceof Error) {
@@ -137,10 +167,34 @@ export default function SignUpPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Регистрация успешна!
             </h2>
-            <p className="text-gray-600 mb-6">
-              Ваш аккаунт создан. Сейчас произойдет автоматический вход в систему...
-            </p>
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            
+            {requiresVerification ? (
+              <>
+                <p className="text-gray-600 mb-4">
+                  Аккаунт создан. Код подтверждения отправлен на ваш email.
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center space-x-2 text-blue-700">
+                    <Mail className="w-5 h-5" />
+                    <span className="text-sm font-medium">Проверьте почту и введите код</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Перенаправляем на страницу ввода кода...
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-6">
+                  Аккаунт создан и активирован. Сейчас произойдет автоматический вход...
+                </p>
+                <p className="text-sm text-gray-500">
+                  Перенаправляем в дашборд...
+                </p>
+              </>
+            )}
+            
+            <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mt-4" />
           </div>
         </div>
       </div>
