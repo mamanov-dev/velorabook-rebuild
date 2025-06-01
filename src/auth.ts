@@ -36,6 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email: 'demo@velorabook.com',
               name: 'Demo User',
               image: undefined,
+              isVerified: true, // ← Демо пользователь всегда верифицирован
             }
           }
 
@@ -74,7 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               name: true,
               image: true,
               password: true,
-              isVerified: true,
+              isVerified: true, // ← Добавляем поле верификации
             }
           })
 
@@ -95,12 +96,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          console.log('✅ User authenticated:', user.email)
+          console.log('✅ User authenticated:', user.email, 'Verified:', user.isVerified)
           return {
             id: user.id,
             email: user.email,
             name: user.name,
             image: user.image ?? undefined,
+            isVerified: user.isVerified, // ← Передаем статус верификации
           }
         } catch (error) {
           console.error('❌ Auth error:', error)
@@ -122,10 +124,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = user.email
         token.name = user.name
         token.image = user.image
+        token.isVerified = user.isVerified // ← Добавляем в JWT
       }
       if (trigger === 'update' && session) {
         token.name = session.user.name
         token.image = session.user.image
+        token.isVerified = session.user.isVerified // ← Обновляем при изменении
       }
       return token
     },
@@ -136,6 +140,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.email = token.email as string
         session.user.name = token.name as string
         session.user.image = token.image as string | undefined
+        session.user.isVerified = token.isVerified as boolean // ← Добавляем в сессию
       }
       return session
     },
@@ -146,6 +151,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           provider: account?.provider,
           email: user.email,
           userId: user.id,
+          isVerified: user.isVerified, // ← Логируем статус верификации
         })
       }
       return true
@@ -159,6 +165,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           provider: account?.provider,
           isNewUser,
+          isVerified: user.isVerified,
         })
       }
     },
@@ -179,7 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 })
 
-// Простой сервис пользователей для этапа 1
+// ✨ Расширенный сервис пользователей с поддержкой верификации
 export const userService = {
   async createUser(userData: { name: string; email: string; password: string }) {
     if (!serviceAvailability.database) {
@@ -204,7 +211,7 @@ export const userService = {
           name: userData.name.trim(),
           email: userData.email.toLowerCase().trim(),
           password: hashedPassword,
-          isVerified: false,
+          isVerified: false, // ← Важно: создаем как неверифицированного
         },
         select: {
           id: true,
@@ -215,7 +222,7 @@ export const userService = {
         },
       })
 
-      console.log('✅ New user created:', user.email)
+      console.log('✅ New user created (unverified):', user.email)
       return user
     } catch (error) {
       console.error('❌ User creation error:', error)
@@ -225,4 +232,158 @@ export const userService = {
       throw new Error('Failed to create user')
     }
   },
+
+  // ✨ Новый метод: получение пользователя по email
+  async getUserByEmail(email: string) {
+    if (!serviceAvailability.database) {
+      return null
+    }
+
+    try {
+      const { prisma } = await import('@/lib/prisma')
+      
+      return await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isVerified: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      })
+    } catch (error) {
+      console.error('❌ Get user error:', error)
+      return null
+    }
+  },
+
+  // ✨ Новый метод: верификация пользователя
+  async verifyUser(email: string) {
+    if (!serviceAvailability.database) {
+      throw new Error('Database not available')
+    }
+
+    try {
+      const { prisma } = await import('@/lib/prisma')
+      
+      const updatedUser = await prisma.user.update({
+        where: { email: email.toLowerCase() },
+        data: {
+          isVerified: true,
+          emailVerified: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isVerified: true,
+          emailVerified: true,
+        },
+      })
+
+      console.log('✅ User verified:', updatedUser.email)
+      return updatedUser
+    } catch (error) {
+      console.error('❌ User verification error:', error)
+      if (error instanceof Error) {
+        throw error
+      }
+      throw new Error('Failed to verify user')
+    }
+  },
+
+  // ✨ Новый метод: проверка статуса верификации
+  async checkVerificationStatus(email: string) {
+    if (!serviceAvailability.database) {
+      return { exists: false, isVerified: false }
+    }
+
+    try {
+      const { prisma } = await import('@/lib/prisma')
+      
+      const user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        select: {
+          id: true,
+          isVerified: true,
+        },
+      })
+
+      return {
+        exists: !!user,
+        isVerified: user?.isVerified ?? false,
+      }
+    } catch (error) {
+      console.error('❌ Check verification status error:', error)
+      return { exists: false, isVerified: false }
+    }
+  }
+}
+
+// ✨ Новая функция: обновление сессии после верификации
+export async function updateUserSession(userId: string) {
+  if (!serviceAvailability.database) {
+    return null
+  }
+
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        isVerified: true,
+      }
+    })
+
+    return user
+  } catch (error) {
+    console.error('❌ Update user session error:', error)
+    return null
+  }
+}
+
+// ✨ Новая функция: получение статистики пользователей
+export async function getUserStats() {
+  if (!serviceAvailability.database) {
+    return {
+      total: 0,
+      verified: 0,
+      unverified: 0,
+      verificationRate: 0,
+    }
+  }
+
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    
+    const [total, verified] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { isVerified: true } }),
+    ])
+
+    const unverified = total - verified
+    const verificationRate = total > 0 ? Math.round((verified / total) * 100) : 0
+
+    return {
+      total,
+      verified,
+      unverified,
+      verificationRate,
+    }
+  } catch (error) {
+    console.error('❌ Get user stats error:', error)
+    return {
+      total: 0,
+      verified: 0,
+      unverified: 0,
+      verificationRate: 0,
+    }
+  }
 }
