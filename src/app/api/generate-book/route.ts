@@ -113,7 +113,7 @@ ${answersText}${imageContext}
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -124,7 +124,7 @@ ${answersText}${imageContext}
           content: fullPrompt
         }
       ],
-      max_tokens: 16000,
+      max_tokens: 13000,
       temperature: 0.8,
     })
 
