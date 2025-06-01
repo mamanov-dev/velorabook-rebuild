@@ -129,17 +129,33 @@ ${answersText}${imageContext}
     })
 
     const content = completion.choices[0]?.message?.content
-    if (!content) {
-      throw new Error('No content generated')
-    }
+if (!content) {
+  throw new Error('No content generated')
+}
 
-    // Парсим JSON ответ
-    const bookData = JSON.parse(content)
-    
-    // Валидируем структуру
-    if (!bookData.title || !Array.isArray(bookData.chapters)) {
-      throw new Error('Invalid book structure')
-    }
+// Очищаем markdown форматирование от OpenAI
+const cleanContent = content
+  .replace(/```json\s*/gi, '')      // Убираем ```json
+  .replace(/```javascript\s*/gi, '') // Убираем ```javascript  
+  .replace(/```\s*/g, '')           // Убираем закрывающие ```
+  .trim()                           // Убираем пробелы
+
+// Находим границы JSON объекта
+const firstBrace = cleanContent.indexOf('{')
+const lastBrace = cleanContent.lastIndexOf('}')
+const jsonContent = (firstBrace !== -1 && lastBrace !== -1) 
+  ? cleanContent.substring(firstBrace, lastBrace + 1)
+  : cleanContent
+
+console.log('🔍 JSON preview:', jsonContent.substring(0, 200) + '...')
+
+// Парсим очищенный JSON
+const bookData = JSON.parse(jsonContent)
+
+// Валидируем структуру
+if (!bookData.title || !Array.isArray(bookData.chapters)) {
+  throw new Error('Invalid book structure')
+}
 
     return {
       title: bookData.title,
