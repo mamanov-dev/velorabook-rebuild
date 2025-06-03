@@ -81,10 +81,18 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// ✨ ОБНОВЛЕННАЯ МОДЕЛЬ КНИГИ с новой системой типов
 model Book {
   id                String   @id @default(cuid())
   title             String
-  bookType          String   // romantic, family, friendship, child, travel
+  
+  // ✨ НОВЫЕ ПОЛЯ для двухуровневой системы
+  category          String?   // romantic, family, friendship, professional, special
+  recipient         String?   // girlfriend, mother, colleague, etc.
+  
+  // Старое поле для обратной совместимости (deprecated)
+  bookType          String?   // romantic, family, friendship, child, travel
+  
   status            BookStatus @default(DRAFT)
   content           Json     // полное содержание книги
   metadata          Json?    // метаданные (word count, generated at, etc.)
@@ -107,10 +115,13 @@ model Book {
   images            BookImage[]
   chapters          BookChapter[]
 
-  // Индексы для производительности
+  // ✨ ОБНОВЛЕННЫЕ ИНДЕКСЫ для новой системы
   @@index([userId, createdAt])
-  @@index([bookType, status])
+  @@index([category, recipient])
+  @@index([bookType, status]) // для обратной совместимости
   @@index([status])
+  @@index([category]) // для фильтрации по категориям
+  @@index([recipient]) // для фильтрации по получателям
   @@map("books")
 }
 
@@ -193,6 +204,10 @@ model ApiUsage {
   model         String?
   cost          Decimal? @db.Decimal(10, 4)
   
+  // ✨ НОВЫЕ ПОЛЯ для аналитики по типам книг
+  bookCategory  String?  // для анализа популярности категорий
+  bookRecipient String?  // для анализа популярности получателей
+  
   // Error info
   errorMessage  String?
   
@@ -201,6 +216,8 @@ model ApiUsage {
   @@index([userId])
   @@index([endpoint])
   @@index([createdAt])
+  @@index([bookCategory]) // для аналитики
+  @@index([bookRecipient]) // для аналитики
   @@map("api_usage")
 }
 
@@ -211,3 +228,47 @@ enum BookStatus {
   FAILED
   PUBLISHED
 }
+
+// ✨ НОВЫЕ ENUMS для строгой типизации (опционально)
+// Можно раскомментировать если хотите использовать enum вместо String
+
+// enum BookCategory {
+//   ROMANTIC
+//   FAMILY  
+//   FRIENDSHIP
+//   PROFESSIONAL
+//   SPECIAL
+// }
+
+// enum BookRecipient {
+//   // Романтические
+//   GIRLFRIEND
+//   BOYFRIEND
+//   WIFE
+//   HUSBAND
+//   
+//   // Семейные  
+//   MOTHER
+//   FATHER
+//   DAUGHTER
+//   SON
+//   GRANDMOTHER
+//   GRANDFATHER
+//   SISTER
+//   BROTHER
+//   
+//   // Дружеские
+//   BEST_FRIEND_FEMALE
+//   BEST_FRIEND_MALE
+//   
+//   // Профессиональные
+//   COLLEAGUE
+//   BOSS
+//   MENTOR
+//   TEACHER
+//   
+//   // Особые случаи
+//   SELF
+//   ANNIVERSARY
+//   WEDDING
+// }

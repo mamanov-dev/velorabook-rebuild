@@ -33,15 +33,56 @@ export const UserLoginSchema = z.object({
   password: z.string().min(1, 'Пароль обязателен').max(128),
 }).strict();
 
-// Книги
-export const BookTypeSchema = z.enum([
-  'romantic', 'family', 'friendship', 'child', 'travel'
+// ✨ НОВАЯ СИСТЕМА ТИПОВ КНИГ
+export const BookCategorySchema = z.enum([
+  'romantic', 
+  'family', 
+  'friendship', 
+  'professional', 
+  'special'
 ], {
-  errorMap: () => ({ message: 'Недопустимый тип книги' })
+  errorMap: () => ({ message: 'Недопустимая категория книги' })
 });
 
+export const BookRecipientSchema = z.enum([
+  // Романтические
+  'girlfriend',
+  'boyfriend', 
+  'wife',
+  'husband',
+  
+  // Семейные
+  'mother',
+  'father',
+  'daughter',
+  'son',
+  'grandmother',
+  'grandfather',
+  'sister',
+  'brother',
+  
+  // Дружеские
+  'best_friend_female',
+  'best_friend_male',
+  
+  // Профессиональные
+  'colleague',
+  'boss',
+  'mentor',
+  'teacher',
+  
+  // Особые случаи
+  'self',
+  'anniversary',
+  'wedding'
+], {
+  errorMap: () => ({ message: 'Недопустимый получатель книги' })
+});
+
+// Обновленная схема генерации книги
 export const GenerateBookSchema = z.object({
-  bookType: BookTypeSchema,
+  category: BookCategorySchema,
+  recipient: BookRecipientSchema,
   answers: z.record(z.string().min(1).max(5000)),
   images: z.array(z.object({
     name: z.string().min(1).max(255),
@@ -52,6 +93,19 @@ export const GenerateBookSchema = z.object({
       height: z.number().min(1),
     }),
   })).max(8).optional().default([]),
+}).refine(data => {
+  // Валидация комбинаций категория-получатель
+  const validCombinations: Record<string, string[]> = {
+    romantic: ['girlfriend', 'boyfriend', 'wife', 'husband'],
+    family: ['mother', 'father', 'daughter', 'son', 'grandmother', 'grandfather', 'sister', 'brother'],
+    friendship: ['best_friend_female', 'best_friend_male'],
+    professional: ['colleague', 'boss', 'mentor', 'teacher'],
+    special: ['self', 'anniversary', 'wedding']
+  };
+  
+  return validCombinations[data.category]?.includes(data.recipient);
+}, {
+  message: 'Недопустимая комбинация категории и получателя'
 });
 
 // Функция валидации с улучшенной обработкой ошибок
@@ -85,4 +139,83 @@ export class ValidationError extends Error {
 // Типы
 export type UserRegistration = z.infer<typeof UserRegistrationSchema>;
 export type UserLogin = z.infer<typeof UserLoginSchema>;
+export type BookCategory = z.infer<typeof BookCategorySchema>;
+export type BookRecipient = z.infer<typeof BookRecipientSchema>;
 export type GenerateBookRequest = z.infer<typeof GenerateBookSchema>;
+
+// ✨ Утилитарные функции для работы с новой системой типов
+export const BookTypeUtils = {
+  // Получить все доступные получателей для категории
+  getRecipientsForCategory(category: BookCategory): BookRecipient[] {
+    const mapping: Record<BookCategory, BookRecipient[]> = {
+      romantic: ['girlfriend', 'boyfriend', 'wife', 'husband'],
+      family: ['mother', 'father', 'daughter', 'son', 'grandmother', 'grandfather', 'sister', 'brother'],
+      friendship: ['best_friend_female', 'best_friend_male'],
+      professional: ['colleague', 'boss', 'mentor', 'teacher'],
+      special: ['self', 'anniversary', 'wedding']
+    };
+    
+    return mapping[category] || [];
+  },
+  
+  // Получить категорию по получателю
+  getCategoryForRecipient(recipient: BookRecipient): BookCategory {
+    const mapping: Record<BookRecipient, BookCategory> = {
+      // Романтические
+      girlfriend: 'romantic',
+      boyfriend: 'romantic',
+      wife: 'romantic',
+      husband: 'romantic',
+      
+      // Семейные
+      mother: 'family',
+      father: 'family',
+      daughter: 'family',
+      son: 'family',
+      grandmother: 'family',
+      grandfather: 'family',
+      sister: 'family',
+      brother: 'family',
+      
+      // Дружеские
+      best_friend_female: 'friendship',
+      best_friend_male: 'friendship',
+      
+      // Профессиональные
+      colleague: 'professional',
+      boss: 'professional',
+      mentor: 'professional',
+      teacher: 'professional',
+      
+      // Особые случаи
+      self: 'special',
+      anniversary: 'special',
+      wedding: 'special'
+    };
+    
+    return mapping[recipient];
+  },
+  
+  // Создать составной ключ типа книги
+  createBookTypeKey(category: BookCategory, recipient: BookRecipient): string {
+    return `${category}-${recipient}`;
+  },
+  
+  // Распарсить составной ключ
+  parseBookTypeKey(key: string): { category: BookCategory; recipient: BookRecipient } | null {
+    const [category, recipient] = key.split('-') as [BookCategory, BookRecipient];
+    
+    if (BookCategorySchema.safeParse(category).success && 
+        BookRecipientSchema.safeParse(recipient).success) {
+      return { category, recipient };
+    }
+    
+    return null;
+  },
+  
+  // Проверить валидность комбинации
+  isValidCombination(category: BookCategory, recipient: BookRecipient): boolean {
+    const validRecipients = this.getRecipientsForCategory(category);
+    return validRecipients.includes(recipient);
+  }
+};

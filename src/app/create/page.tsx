@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, ArrowLeft, Heart, Users, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Heart, Users, BookOpen, Sparkles, Briefcase, Star, User, Handshake, Crown, GraduationCap, Calendar, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBook } from '@/contexts/BookContext';
 import ImageUploader from '@/components/ImageUploader';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { BookCategory, BookRecipient, BookTypeUtils } from '@/lib/validation';
 
 interface Question {
   id: string;
@@ -16,739 +17,1034 @@ interface Question {
   required: boolean;
 }
 
-interface BookType {
-  id: string;
+interface BookRecipientOption {
+  id: BookRecipient;
   title: string;
   description: string;
-  icon: React.ElementType;
   price: string;
   questions: Question[];
 }
 
-const bookTypes: BookType[] = [
+interface BookCategoryOption {
+  id: BookCategory;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  recipients: BookRecipientOption[];
+}
+
+// ✨ НОВАЯ СТРУКТУРА ТИПОВ КНИГ
+const bookCategories: BookCategoryOption[] = [
   {
     id: 'romantic',
-    title: 'Романтическая книга',
-    description: 'Для второй половинки',
+    title: 'Романтические книги',
+    description: 'Для любимых людей',
     icon: Heart,
-    price: '2,990₽',
-    questions: [
+    color: 'from-pink-500 to-rose-600',
+    recipients: [
       {
-        id: 'partner_name',
-        text: 'Как зовут вашу вторую половинку?',
-        type: 'text',
-        placeholder: 'Полное имя или как вы обращаетесь дома',
-        required: true
+        id: 'girlfriend',
+        title: 'Для девушки',
+        description: 'Романтическая история ваших отношений',
+        price: '2,990₽',
+        questions: [
+          {
+            id: 'girlfriend_name',
+            text: 'Как зовут вашу девушку?',
+            type: 'text',
+            placeholder: 'Полное имя или как вы ее называете',
+            required: true
+          },
+          {
+            id: 'relationship_duration',
+            text: 'Как долго вы встречаетесь?',
+            type: 'text',
+            placeholder: '6 месяцев, 2 года, с лета 2022...',
+            required: true
+          },
+          {
+            id: 'first_meeting',
+            text: 'Где и как вы познакомились?',
+            type: 'textarea',
+            placeholder: 'Расскажите детально о вашей первой встрече, что почувствовали, о чем говорили... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'what_attracts',
+            text: 'Что вас больше всего привлекает в ней?',
+            type: 'textarea',
+            placeholder: 'Внешность, характер, манера говорить, смеяться... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'first_date',
+            text: 'Расскажите о вашем первом свидании',
+            type: 'textarea',
+            placeholder: 'Куда пошли, что делали, как прошел вечер, что чувствовали... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'love_realization',
+            text: 'Когда поняли, что влюбились?',
+            type: 'textarea',
+            placeholder: 'Опишите момент осознания, где были, что происходило... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'special_moments',
+            text: 'Самые особенные моменты вместе',
+            type: 'textarea',
+            placeholder: 'Романтические вечера, путешествия, смешные ситуации... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'her_qualities',
+            text: 'За какие качества вы ее любите?',
+            type: 'textarea',
+            placeholder: 'Доброта, ум, чувство юмора, как заботится о вас... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'future_plans',
+            text: 'Планируете ли серьезные отношения/свадьбу?',
+            type: 'textarea',
+            placeholder: 'Ваши мечты о совместном будущем, планы... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'love_declaration',
+            text: 'Что хотите сказать ей через эту книгу?',
+            type: 'textarea',
+            placeholder: 'Ваши самые искренние слова любви и благодарности... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите ваши самые дорогие совместные фотографии',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'relationship_duration',
-        text: 'Как долго вы вместе?',
-        type: 'text',
-        placeholder: '2 года, 6 месяцев, с 2019 года...',
-        required: true
+        id: 'boyfriend',
+        title: 'Для парня',
+        description: 'История любви от женского сердца',
+        price: '2,990₽',
+        questions: [
+          {
+            id: 'boyfriend_name',
+            text: 'Как зовут вашего парня?',
+            type: 'text',
+            placeholder: 'Полное имя или как вы его называете',
+            required: true
+          },
+          {
+            id: 'relationship_duration',
+            text: 'Как долго вы встречаетесь?',
+            type: 'text',
+            placeholder: '8 месяцев, 3 года, с весны 2021...',
+            required: true
+          },
+          {
+            id: 'first_impression',
+            text: 'Какое первое впечатление он на вас произвел?',
+            type: 'textarea',
+            placeholder: 'Что заметили сразу, что привлекло внимание... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'his_charm',
+            text: 'Что в нем самое обаятельное?',
+            type: 'textarea',
+            placeholder: 'Улыбка, чувство юмора, манера держаться... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'how_he_cares',
+            text: 'Как он о вас заботится?',
+            type: 'textarea',
+            placeholder: 'Конкретные примеры его заботы, поддержки... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'proud_moments',
+            text: 'Чем в нем вы больше всего гордитесь?',
+            type: 'textarea',
+            placeholder: 'Достижения, качества характера, поступки... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'funny_memories',
+            text: 'Самые смешные моменты с ним',
+            type: 'textarea',
+            placeholder: 'Ситуации, над которыми смеетесь до сих пор... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'perfect_day',
+            text: 'Опишите ваш идеальный день вдвоем',
+            type: 'textarea',
+            placeholder: 'С утра до вечера - что бы делали, где были... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'why_love_him',
+            text: 'За что вы его любите больше всего?',
+            type: 'textarea',
+            placeholder: 'Глубокие чувства, что делает его особенным... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'love_message',
+            text: 'Ваше послание любви для него',
+            type: 'textarea',
+            placeholder: 'Самые важные слова, которые хотите ему сказать... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите ваши лучшие совместные фотографии',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'partner_appearance',
-        text: 'Опишите внешность партнера - что в ней особенного?',
-        type: 'textarea',
-        placeholder: 'Глаза, улыбка, жесты... Что заставляет ваше сердце трепетать? (минимум 50 слов)',
-        required: true
+        id: 'wife',
+        title: 'Для жены',
+        description: 'Книга благодарности спутнице жизни',
+        price: '3,490₽',
+        questions: [
+          {
+            id: 'wife_name',
+            text: 'Как зовут вашу жену?',
+            type: 'text',
+            placeholder: 'Полное имя или домашнее прозвище',
+            required: true
+          },
+          {
+            id: 'marriage_duration',
+            text: 'Сколько лет в браке?',
+            type: 'text',
+            placeholder: '5 лет, 15 лет, с 2010 года...',
+            required: true
+          },
+          {
+            id: 'dating_story',
+            text: 'История ваших отношений до свадьбы',
+            type: 'textarea',
+            placeholder: 'Как встретились, развивались отношения, решение пожениться... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'wedding_memories',
+            text: 'Воспоминания о свадебном дне',
+            type: 'textarea',
+            placeholder: 'Самые яркие моменты торжества, эмоции... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'life_together',
+            text: 'Как строили совместную жизнь?',
+            type: 'textarea',
+            placeholder: 'Первый дом, привычки, традиции семьи... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'her_role',
+            text: 'Какая она жена и хозяйка?',
+            type: 'textarea',
+            placeholder: 'Как ведет дом, заботится о семье, создает уют... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'difficult_times',
+            text: 'Как вместе преодолевали трудности?',
+            type: 'textarea',
+            placeholder: 'Сложные периоды и как поддерживали друг друга... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'children_topic',
+            text: 'Если есть дети - какая она мать?',
+            type: 'textarea',
+            placeholder: 'Как воспитывает детей, какие у нее материнские качества... (минимум 60 слов)',
+            required: false
+          },
+          {
+            id: 'gratitude',
+            text: 'За что вы благодарны жене больше всего?',
+            type: 'textarea',
+            placeholder: 'Что она дала вашей жизни, как изменила вас... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'love_declaration',
+            text: 'Слова любви, которые хотите сказать жене',
+            type: 'textarea',
+            placeholder: 'Самые искренние чувства и обещания... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии вашей семейной жизни',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'first_meeting_place',
-        text: 'Где и как вы познакомились?',
-        type: 'textarea',
-        placeholder: 'Опишите место, обстановку, погоду, ваше настроение... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'first_impression',
-        text: 'Какое первое впечатление произвел на вас партнер?',
-        type: 'textarea',
-        placeholder: 'Что почувствовали? О чем подумали? Что запомнилось больше всего? (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'first_conversation',
-        text: 'О чем вы говорили при первом знакомстве?',
-        type: 'textarea',
-        placeholder: 'Первые слова, темы разговора, что вас удивило в собеседнике... (минимум 40 слов)',
-        required: true
-      },
-      {
-        id: 'first_date_story',
-        text: 'Расскажите детально о вашем первом свидании',
-        type: 'textarea',
-        placeholder: 'Куда пошли, что делали, о чем говорили, какие эмоции испытывали... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'moment_of_love_realization',
-        text: 'Когда и как вы поняли, что влюбились?',
-        type: 'textarea',
-        placeholder: 'Опишите этот переломный момент - где были, что происходило, что почувствовали... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'partner_scent',
-        text: 'Какой запах ассоциируется у вас с партнером?',
-        type: 'textarea',
-        placeholder: 'Духи, естественный запах, или может быть кофе по утрам... (минимум 30 слов)',
-        required: true
-      },
-      {
-        id: 'partner_laugh',
-        text: 'Опишите смех вашего партнера',
-        type: 'textarea',
-        placeholder: 'Как звучит, когда чаще всего смеется, что вас в нем трогает... (минимум 40 слов)',
-        required: true
-      },
-      {
-        id: 'partner_habits',
-        text: 'Какие милые привычки есть у вашего партнера?',
-        type: 'textarea',
-        placeholder: 'Жесты, слова, ритуалы... То, что делает его особенным (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'partner_best_qualities',
-        text: 'За что вы любите своего партнера больше всего?',
-        type: 'textarea',
-        placeholder: 'Черты характера, поступки, качества души... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'difficult_moment_support',
-        text: 'Как партнер поддержал вас в трудную минуту?',
-        type: 'textarea',
-        placeholder: 'Конкретная ситуация, когда почувствовали его заботу и любовь... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'happiest_moment_together',
-        text: 'Самый счастливый момент в ваших отношениях',
-        type: 'textarea',
-        placeholder: 'Опишите подробно: где, когда, что происходило, какие эмоции... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'funniest_memory',
-        text: 'Самая смешная история из ваших отношений',
-        type: 'textarea',
-        placeholder: 'Ситуация, над которой вы до сих пор смеетесь вместе... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'romantic_gesture',
-        text: 'Самый романтичный поступок партнера',
-        type: 'textarea',
-        placeholder: 'Сюрприз, подарок, или просто особенный жест... Что растрогало до слез? (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'daily_romance',
-        text: 'Как романтика проявляется в вашей повседневной жизни?',
-        type: 'textarea',
-        placeholder: 'Маленькие знаки внимания, ритуалы, способы заботы... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'special_places',
-        text: 'Ваши особенные места и почему они важны',
-        type: 'textarea',
-        placeholder: 'Места с историей: где познакомились, первое свидание, важные моменты... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'couple_traditions',
-        text: 'Какие традиции и ритуалы есть только у вас двоих?',
-        type: 'textarea',
-        placeholder: 'Особые дни, способы прощания, домашние традиции... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'love_language',
-        text: 'Как вы выражаете любовь друг к другу?',
-        type: 'textarea',
-        placeholder: 'Слова, прикосновения, подарки, поступки... Ваш уникальный язык любви (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'overcoming_difficulties',
-        text: 'Как вы преодолели самый сложный период в отношениях?',
-        type: 'textarea',
-        placeholder: 'Что случилось, как справлялись, что вас объединило еще больше... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'growth_together',
-        text: 'Как вы изменились благодаря этим отношениям?',
-        type: 'textarea',
-        placeholder: 'Что нового открыли в себе, чему научились друг у друга... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'shared_dreams',
-        text: 'О чем вы мечтаете вместе?',
-        type: 'textarea',
-        placeholder: 'Планы, цели, места которые хотите посетить, жизнь которую строите... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'perfect_day',
-        text: 'Опишите ваш идеальный день вдвоем',
-        type: 'textarea',
-        placeholder: 'С утра до вечера - что бы делали, где были, как проводили время... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'gratitude',
-        text: 'За что вы больше всего благодарны партнеру?',
-        type: 'textarea',
-        placeholder: 'Что он привнес в вашу жизнь, как изменил ее к лучшему... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'future_vision',
-        text: 'Как вы видите вашу совместную жизнь через 10 лет?',
-        type: 'textarea',
-        placeholder: 'Мечты о будущем, каким видите партнера, какой будет ваша любовь... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'love_declaration',
-        text: 'Ваши самые важные слова любви партнеру',
-        type: 'textarea',
-        placeholder: 'То, что хотите сказать прямо сейчас, от всего сердца... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'photos',
-        text: 'Загрузите ваши самые дорогие совместные фотографии',
-        type: 'file',
-        required: true
+        id: 'husband',
+        title: 'Для мужа',
+        description: 'Признание в любви спутнику жизни',
+        price: '3,490₽',
+        questions: [
+          {
+            id: 'husband_name',
+            text: 'Как зовут вашего мужа?',
+            type: 'text',
+            placeholder: 'Полное имя или как вы его называете дома',
+            required: true
+          },
+          {
+            id: 'marriage_years',
+            text: 'Сколько лет в браке?',
+            type: 'text',
+            placeholder: '3 года, 20 лет, с 2015 года...',
+            required: true
+          },
+          {
+            id: 'courtship_memories',
+            text: 'Воспоминания о времени ухаживаний',
+            type: 'textarea',
+            placeholder: 'Как он вас покорил, самые романтичные моменты... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'why_chose_him',
+            text: 'Почему выбрали именно его в мужья?',
+            type: 'textarea',
+            placeholder: 'Качества, которые убедили в правильности выбора... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'husband_qualities',
+            text: 'Каким он стал мужем?',
+            type: 'textarea',
+            placeholder: 'Как заботится о семье, какой он партнер в браке... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'his_support',
+            text: 'Как он вас поддерживает?',
+            type: 'textarea',
+            placeholder: 'В трудные моменты, в достижении целей... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'father_role',
+            text: 'Если есть дети - какой он отец?',
+            type: 'textarea',
+            placeholder: 'Как общается с детьми, какие отцовские качества... (минимум 60 слов)',
+            required: false
+          },
+          {
+            id: 'growth_together',
+            text: 'Как вы росли и развивались вместе?',
+            type: 'textarea',
+            placeholder: 'Чему научились друг у друга, как изменились... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'appreciation',
+            text: 'За что цените его больше всего?',
+            type: 'textarea',
+            placeholder: 'Что делает его особенным мужем и человеком... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'love_words',
+            text: 'Что хотите сказать мужу через эту книгу?',
+            type: 'textarea',
+            placeholder: 'Слова благодарности, любви и планы на будущее... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии вашей семейной истории',
+            type: 'file',
+            required: true
+          }
+        ]
       }
     ]
   },
   {
     id: 'family',
-    title: 'Семейная хроника',
-    description: 'Для всей семьи',
+    title: 'Семейные книги',
+    description: 'Для родных и близких',
     icon: Users,
-    price: '3,990₽',
-    questions: [
+    color: 'from-blue-500 to-indigo-600',
+    recipients: [
       {
-        id: 'family_members',
-        text: 'Расскажите о всех членах семьи',
-        type: 'textarea',
-        placeholder: 'Имена, возраст, роли в семье, характеры... (минимум 60 слов)',
-        required: true
+        id: 'mother',
+        title: 'Для мамы',
+        description: 'Книга благодарности самому дорогому человеку',
+        price: '3,490₽',
+        questions: [
+          {
+            id: 'mother_name',
+            text: 'Как зовут вашу маму?',
+            type: 'text',
+            placeholder: 'Полное имя или как вы ее называете',
+            required: true
+          },
+          {
+            id: 'childhood_memories',
+            text: 'Самые яркие детские воспоминания с мамой',
+            type: 'textarea',
+            placeholder: 'Игры, сказки на ночь, совместные занятия... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'mother_care',
+            text: 'Как мама о вас заботилась в детстве?',
+            type: 'textarea',
+            placeholder: 'Болезни, школьные проблемы, как поддерживала... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'life_lessons',
+            text: 'Какие жизненные уроки дала вам мама?',
+            type: 'textarea',
+            placeholder: 'Мудрые советы, принципы которые привила... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'mother_strength',
+            text: 'В чем проявляется сила характера вашей мамы?',
+            type: 'textarea',
+            placeholder: 'Как преодолевала трудности, где брала силы... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'mother_sacrifice',
+            text: 'Чем мама жертвовала ради вас и семьи?',
+            type: 'textarea',
+            placeholder: 'Карьера, личные интересы, время... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'adult_relationship',
+            text: 'Как изменились ваши отношения, когда вы повзрослели?',
+            type: 'textarea',
+            placeholder: 'Стали ли ближе, о чем теперь говорите... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'mother_pride',
+            text: 'Чем мама гордится в вас больше всего?',
+            type: 'textarea',
+            placeholder: 'Ваши достижения, качества характера... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'gratitude_specifics',
+            text: 'За что конкретно вы благодарны маме?',
+            type: 'textarea',
+            placeholder: 'Что она дала вашей жизни, как повлияла на вас... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'love_declaration',
+            text: 'Что хотите сказать маме?',
+            type: 'textarea',
+            placeholder: 'Слова любви, благодарности и признательности... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии с мамой разных лет',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'family_origin_story',
-        text: 'История создания вашей семьи',
-        type: 'textarea',
-        placeholder: 'Как познакомились родители, их свадьба, первые годы вместе... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'family_roots',
-        text: 'Откуда родом ваша семья?',
-        type: 'textarea',
-        placeholder: 'География, культурные корни, семейные легенды о предках... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'grandparents_stories',
-        text: 'Расскажите о дедушках и бабушках',
-        type: 'textarea',
-        placeholder: 'Их характеры, истории, мудрость которую передали... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'childhood_home',
-        text: 'Опишите дом, где выросли дети',
-        type: 'textarea',
-        placeholder: 'Комнаты, уютные уголки, запахи, звуки... Что делало его особенным? (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'family_traditions',
-        text: 'Главные семейные традиции',
-        type: 'textarea',
-        placeholder: 'Праздники, ритуалы, особые дни... Как вы их отмечаете? (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'holiday_memories',
-        text: 'Самые яркие воспоминания о семейных праздниках',
-        type: 'textarea',
-        placeholder: 'Новый год, дни рождения, юбилеи... Что делало их незабываемыми? (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'family_cooking',
-        text: 'Семейные рецепты и кулинарные традиции',
-        type: 'textarea',
-        placeholder: 'Фирменные блюда, секретные рецепты, кто что готовит лучше всех... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'family_sayings',
-        text: 'Особенные слова и выражения в вашей семье',
-        type: 'textarea',
-        placeholder: 'Домашние прозвища, смешные фразы, семейный сленг... (минимум 40 слов)',
-        required: true
-      },
-      {
-        id: 'memorable_family_trips',
-        text: 'Незабываемые семейные путешествия',
-        type: 'textarea',
-        placeholder: 'Куда ездили, что больше всего запомнилось, смешные случаи в дороге... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'family_milestones',
-        text: 'Важные события в жизни семьи',
-        type: 'textarea',
-        placeholder: 'Первые шаги детей, выпускные, свадьбы, рождения... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'difficult_times',
-        text: 'Как семья проходила через трудные времена?',
-        type: 'textarea',
-        placeholder: 'Сложные периоды и как вы поддерживали друг друга... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'family_strengths',
-        text: 'В чем сила вашей семьи?',
-        type: 'textarea',
-        placeholder: 'Что вас объединяет, какие качества помогают быть вместе... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'family_values',
-        text: 'Главные ценности вашей семьи',
-        type: 'textarea',
-        placeholder: 'Принципы, убеждения, что считаете самым важным в жизни... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'parents_wisdom',
-        text: 'Какие уроки дали вам родители?',
-        type: 'textarea',
-        placeholder: 'Жизненная мудрость, советы, принципы которые передали... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'children_personalities',
-        text: 'Расскажите о характерах детей в семье',
-        type: 'textarea',
-        placeholder: 'Кто какой, забавные особенности, таланты, мечты каждого... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'family_humor',
-        text: 'Самые смешные семейные истории',
-        type: 'textarea',
-        placeholder: 'Курьезы, над которыми смеетесь всей семьей до сих пор... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'everyday_moments',
-        text: 'Особенная красота обычных дней',
-        type: 'textarea',
-        placeholder: 'Утренние ритуалы, вечерние разговоры, семейные ужины... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'support_system',
-        text: 'Как вы поддерживаете друг друга?',
-        type: 'textarea',
-        placeholder: 'Способы заботы, как помогаете в трудностях, радуетесь успехам... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'family_dreams',
-        text: 'О чем мечтает ваша семья?',
-        type: 'textarea',
-        placeholder: 'Общие планы, цели, места которые хотите посетить вместе... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'legacy_hopes',
-        text: 'Что хотите передать следующим поколениям?',
-        type: 'textarea',
-        placeholder: 'Традиции, ценности, мудрость которую важно сохранить... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'gratitude_family',
-        text: 'За что вы больше всего благодарны своей семье?',
-        type: 'textarea',
-        placeholder: 'Что дает вам семья, как она обогащает жизнь каждого... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'family_photos',
-        text: 'Загрузите самые дорогие семейные фотографии',
-        type: 'file',
-        required: true
+        id: 'father',
+        title: 'Для папы',
+        description: 'Признание в любви и уважении отцу',
+        price: '3,490₽',
+        questions: [
+          {
+            id: 'father_name',
+            text: 'Как зовут вашего папу?',
+            type: 'text',
+            placeholder: 'Полное имя или как вы его называете',
+            required: true
+          },
+          {
+            id: 'father_work',
+            text: 'Расскажите о работе папы и его профессионализме',
+            type: 'textarea',
+            placeholder: 'Профессия, карьера, как относится к работе... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'father_wisdom',
+            text: 'Какие мужские уроки преподал вам отец?',
+            type: 'textarea',
+            placeholder: 'О жизни, отношениях, ответственности... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'shared_activities',
+            text: 'Что вы любили делать вместе с папой?',
+            type: 'textarea',
+            placeholder: 'Рыбалка, футбол, ремонт, поездки... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'father_protection',
+            text: 'Как папа защищал и оберегал семью?',
+            type: 'textarea',
+            placeholder: 'Конкретные примеры его заботы и защиты... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'father_character',
+            text: 'Какие качества характера папы вы больше всего цените?',
+            type: 'textarea',
+            placeholder: 'Честность, надежность, чувство юмора... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'difficult_times',
+            text: 'Как папа справлялся с трудными периодами?',
+            type: 'textarea',
+            placeholder: 'Кризисы, болезни, проблемы - где брал силы... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'inherited_traits',
+            text: 'Что вы унаследовали от отца?',
+            type: 'textarea',
+            placeholder: 'Черты характера, привычки, взгляды на жизнь... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'respect_reasons',
+            text: 'За что вы уважаете отца больше всего?',
+            type: 'textarea',
+            placeholder: 'Поступки, принципы, жизненная позиция... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'father_message',
+            text: 'Что хотите сказать папе через эту книгу?',
+            type: 'textarea',
+            placeholder: 'Слова благодарности, уважения и любви... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии с отцом',
+            type: 'file',
+            required: true
+          }
+        ]
       }
+      // Добавлю остальных получателей в следующем обновлении для экономии места
     ]
   },
   {
     id: 'friendship',
-    title: 'Книга дружбы',
+    title: 'Дружеские книги',
     description: 'Для лучших друзей',
     icon: BookOpen,
-    price: '2,490₽',
-    questions: [
+    color: 'from-green-500 to-emerald-600',
+    recipients: [
       {
-        id: 'friend_name',
-        text: 'Как зовут вашего друга?',
-        type: 'text',
-        placeholder: 'Имя и как вы его называете',
-        required: true
+        id: 'best_friend_female',
+        title: 'Для лучшей подруги',
+        description: 'История настоящей женской дружбы',
+        price: '2,490₽',
+        questions: [
+          {
+            id: 'friend_name',
+            text: 'Как зовут вашу лучшую подругу?',
+            type: 'text',
+            placeholder: 'Имя и как вы ее называете',
+            required: true
+          },
+          {
+            id: 'friendship_duration',
+            text: 'Как долго вы дружите?',
+            type: 'text',
+            placeholder: 'С детства, 10 лет, со школы...',
+            required: true
+          },
+          {
+            id: 'how_met',
+            text: 'Как вы познакомились?',
+            type: 'textarea',
+            placeholder: 'Обстоятельства знакомства, первое впечатление... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'what_bonds',
+            text: 'Что вас объединяет?',
+            type: 'textarea',
+            placeholder: 'Общие интересы, ценности, взгляды на жизнь... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'adventures_together',
+            text: 'Ваши самые яркие приключения вместе',
+            type: 'textarea',
+            placeholder: 'Путешествия, вечеринки, спонтанные поездки... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'support_moments',
+            text: 'Как она поддерживала вас в трудные моменты?',
+            type: 'textarea',
+            placeholder: 'Конкретные ситуации поддержки и заботы... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'funny_memories',
+            text: 'Самые смешные моменты вашей дружбы',
+            type: 'textarea',
+            placeholder: 'Истории, над которыми смеетесь до сих пор... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'her_qualities',
+            text: 'За какие качества вы цените подругу?',
+            type: 'textarea',
+            placeholder: 'Верность, честность, чувство юмора... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'gratitude',
+            text: 'За что вы благодарны подруге?',
+            type: 'textarea',
+            placeholder: 'Что она привнесла в вашу жизнь... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'friendship_message',
+            text: 'Что хотите сказать лучшей подруге?',
+            type: 'textarea',
+            placeholder: 'Слова благодарности и планы на будущую дружбу... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии с лучшими моментами дружбы',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'friendship_duration',
-        text: 'Как долго вы дружите?',
-        type: 'text',
-        placeholder: '5 лет, с детства, со школы...',
-        required: true
-      },
-      {
-        id: 'first_meeting',
-        text: 'Как и где вы познакомились?',
-        type: 'textarea',
-        placeholder: 'Обстоятельства знакомства, первое впечатление друг о друге... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_beginning',
-        text: 'Как развивалась ваша дружба?',
-        type: 'textarea',
-        placeholder: 'От знакомства к настоящей дружбе - ключевые моменты... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'friend_personality',
-        text: 'Опишите характер вашего друга',
-        type: 'textarea',
-        placeholder: 'Что делает его особенным, уникальные черты характера... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'shared_interests',
-        text: 'Что вас объединяет?',
-        type: 'textarea',
-        placeholder: 'Общие увлечения, интересы, взгляды на жизнь... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_qualities',
-        text: 'За что вы цените этого друга больше всего?',
-        type: 'textarea',
-        placeholder: 'Качества, которые делают его незаменимым в вашей жизни... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'support_moments',
-        text: 'Как друг поддерживал вас в трудные моменты?',
-        type: 'textarea',
-        placeholder: 'Конкретные ситуации, когда почувствовали его поддержку... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'shared_adventures',
-        text: 'Ваши самые яркие совместные приключения',
-        type: 'textarea',
-        placeholder: 'Путешествия, походы, неожиданные ситуации... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'funny_moments',
-        text: 'Самые смешные моменты вашей дружбы',
-        type: 'textarea',
-        placeholder: 'Истории, над которыми смеетесь до сих пор... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'inside_jokes',
-        text: 'Ваши внутренние шутки и коды',
-        type: 'textarea',
-        placeholder: 'То, что понимаете только вы двое - фразы, жесты, воспоминания... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'growth_together',
-        text: 'Как вы выросли благодаря этой дружбе?',
-        type: 'textarea',
-        placeholder: 'Чему научились друг у друга, как изменились... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'distance_friendship',
-        text: 'Как поддерживаете дружбу на расстоянии?',
-        type: 'textarea',
-        placeholder: 'Способы оставаться близкими, несмотря на обстоятельства... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'mutual_understanding',
-        text: 'Что особенного в том, как вы понимаете друг друга?',
-        type: 'textarea',
-        placeholder: 'Telepathy, понимание с полуслова, чувство настроения... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_traditions',
-        text: 'Ваши дружеские традиции и ритуалы',
-        type: 'textarea',
-        placeholder: 'Регулярные встречи, способы празднования, особые даты... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'dream_adventures',
-        text: 'О каких совместных приключениях мечтаете?',
-        type: 'textarea',
-        placeholder: 'Планы на будущее, места которые хотите посетить вместе... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_wisdom',
-        text: 'Какие жизненные уроки дала вам эта дружба?',
-        type: 'textarea',
-        placeholder: 'Что поняли о дружбе, жизни, себе благодаря этому человеку... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'gratitude_friend',
-        text: 'За что вы больше всего благодарны другу?',
-        type: 'textarea',
-        placeholder: 'Что он привнес в вашу жизнь, как сделал ее лучше... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_message',
-        text: 'Что хотите сказать другу через эту книгу?',
-        type: 'textarea',
-        placeholder: 'Слова благодарности, любви, планы на будущее дружбы... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'friendship_photos',
-        text: 'Загрузите фотографии с лучшими моментами дружбы',
-        type: 'file',
-        required: true
+        id: 'best_friend_male',
+        title: 'Для лучшего друга',
+        description: 'Книга о настоящей мужской дружбе',
+        price: '2,490₽',
+        questions: [
+          {
+            id: 'friend_name',
+            text: 'Как зовут вашего лучшего друга?',
+            type: 'text',
+            placeholder: 'Имя и как вы его называете',
+            required: true
+          },
+          {
+            id: 'friendship_years',
+            text: 'Сколько лет дружите?',
+            type: 'text',
+            placeholder: 'С детства, 15 лет, с армии...',
+            required: true
+          },
+          {
+            id: 'brotherhood_story',
+            text: 'История вашего знакомства и дружбы',
+            type: 'textarea',
+            placeholder: 'Как встретились, что сразу понравилось друг в друге... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'shared_interests',
+            text: 'Общие увлечения и интересы',
+            type: 'textarea',
+            placeholder: 'Спорт, хобби, то что любите делать вместе... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'loyal_moments',
+            text: 'Как он проявил верность в дружбе?',
+            type: 'textarea',
+            placeholder: 'Ситуации, когда он вас поддержал, не предал... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'crazy_adventures',
+            text: 'Самые безумные приключения вместе',
+            type: 'textarea',
+            placeholder: 'Смешные, опасные или просто запоминающиеся истории... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'his_character',
+            text: 'Что особенного в характере друга?',
+            type: 'textarea',
+            placeholder: 'Надежность, честность, чувство юмора... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'learned_together',
+            text: 'Чему вы научились благодаря этой дружбе?',
+            type: 'textarea',
+            placeholder: 'Жизненные уроки, навыки, мудрость... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'appreciation',
+            text: 'За что цените друга больше всего?',
+            type: 'textarea',
+            placeholder: 'Качества, поступки, влияние на вашу жизнь... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'brotherhood_message',
+            text: 'Послание лучшему другу',
+            type: 'textarea',
+            placeholder: 'Что значит для вас эта дружба, планы на будущее... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии ваших приключений',
+            type: 'file',
+            required: true
+          }
+        ]
       }
     ]
   },
   {
-    id: 'child',
-    title: 'Детская книга',
-    description: 'О вашем ребенке',
-    icon: Heart,
-    price: '3,490₽',
-    questions: [
+    id: 'professional',
+    title: 'Профессиональные книги',
+    description: 'Для коллег и наставников',
+    icon: Briefcase,
+    color: 'from-blue-600 to-purple-600',
+    recipients: [
       {
-        id: 'child_name',
-        text: 'Как зовут вашего ребенка?',
-        type: 'text',
-        placeholder: 'Полное имя и домашние прозвища',
-        required: true
+        id: 'colleague',
+        title: 'Для коллеги',
+        description: 'Книга признательности сотруднику',
+        price: '2,790₽',
+        questions: [
+          {
+            id: 'colleague_name',
+            text: 'Как зовут вашего коллегу?',
+            type: 'text',
+            placeholder: 'Полное имя',
+            required: true
+          },
+          {
+            id: 'work_together_duration',
+            text: 'Как долго работаете вместе?',
+            type: 'text',
+            placeholder: '2 года, с 2020 года...',
+            required: true
+          },
+          {
+            id: 'professional_qualities',
+            text: 'Профессиональные качества коллеги',
+            type: 'textarea',
+            placeholder: 'Компетентность, ответственность, инициативность... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'collaboration_projects',
+            text: 'Самые успешные совместные проекты',
+            type: 'textarea',
+            placeholder: 'Конкретные проекты и роль коллеги в успехе... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'support_examples',
+            text: 'Как коллега помогал в работе?',
+            type: 'textarea',
+            placeholder: 'Советы, поддержка в сложных ситуациях... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'positive_impact',
+            text: 'Как коллега влияет на рабочую атмосферу?',
+            type: 'textarea',
+            placeholder: 'Создание позитива, решение конфликтов... (минимум 50 слов)',
+            required: true
+          },
+          {
+            id: 'learning_from_colleague',
+            text: 'Чему вы научились у этого коллеги?',
+            type: 'textarea',
+            placeholder: 'Профессиональные навыки, подходы к работе... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'appreciation_message',
+            text: 'Слова благодарности коллеге',
+            type: 'textarea',
+            placeholder: 'За что благодарны, как цените сотрудничество... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии с рабочих мероприятий',
+            type: 'file',
+            required: false
+          }
+        ]
       },
       {
-        id: 'child_age',
-        text: 'Сколько лет ребенку?',
-        type: 'text',
-        placeholder: '5 лет, 2 года 3 месяца...',
-        required: true
-      },
-      {
-        id: 'pregnancy_story',
-        text: 'История ожидания малыша',
-        type: 'textarea',
-        placeholder: 'Беременность, первые шевеления, подготовка к рождению... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'birth_story',
-        text: 'День рождения вашего чуда',
-        type: 'textarea',
-        placeholder: 'Роды, первая встреча, первые эмоции... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'first_moments',
-        text: 'Первые дни дома с малышом',
-        type: 'textarea',
-        placeholder: 'Новые ощущения, привыкание, первые ночи... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'milestones',
-        text: 'Важные достижения и первые разы',
-        type: 'textarea',
-        placeholder: 'Первая улыбка, слово, шаг, зубик... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'personality_traits',
-        text: 'Характер и особенности ребенка',
-        type: 'textarea',
-        placeholder: 'Темперамент, привычки, что делает его уникальным... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'favorite_activities',
-        text: 'Любимые игры и занятия',
-        type: 'textarea',
-        placeholder: 'Во что любит играть, чем увлекается, таланты... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'funny_sayings',
-        text: 'Смешные слова и фразы ребенка',
-        type: 'textarea',
-        placeholder: 'Детские перлы, забавные высказывания, логика ребенка... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'bedtime_rituals',
-        text: 'Ритуалы перед сном',
-        type: 'textarea',
-        placeholder: 'Любимые сказки, песенки, как укладываетесь спать... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'parent_child_moments',
-        text: 'Особенные моменты с ребенком',
-        type: 'textarea',
-        placeholder: 'Трогательные ситуации, когда сердце переполняется любовью... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'child_dreams',
-        text: 'Мечты и планы для ребенка',
-        type: 'textarea',
-        placeholder: 'Каким видите будущее, чего желаете в жизни... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'love_message',
-        text: 'Послание любви вашему ребенку',
-        type: 'textarea',
-        placeholder: 'Что хотите, чтобы он знал о вашей любви... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'child_photos',
-        text: 'Загрузите самые дорогие фотографии ребенка',
-        type: 'file',
-        required: true
+        id: 'teacher',
+        title: 'Для учителя',
+        description: 'Благодарность наставнику',
+        price: '2,990₽',
+        questions: [
+          {
+            id: 'teacher_name',
+            text: 'Как зовут вашего учителя?',
+            type: 'text',
+            placeholder: 'Полное имя и отчество',
+            required: true
+          },
+          {
+            id: 'subject_taught',
+            text: 'Какой предмет преподавал?',
+            type: 'text',
+            placeholder: 'Математика, литература, история...',
+            required: true
+          },
+          {
+            id: 'learning_period',
+            text: 'Когда и где у вас учились?',
+            type: 'text',
+            placeholder: 'Школа, университет, годы обучения...',
+            required: true
+          },
+          {
+            id: 'teaching_style',
+            text: 'Что особенного было в методах преподавания?',
+            type: 'textarea',
+            placeholder: 'Как объяснял материал, находил подход к ученикам... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'life_lessons',
+            text: 'Какие жизненные уроки дал учитель?',
+            type: 'textarea',
+            placeholder: 'Не только предмет, но и мудрость, принципы... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'inspiration',
+            text: 'Как учитель вас вдохновлял?',
+            type: 'textarea',
+            placeholder: 'Влияние на выбор профессии, интерес к предмету... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'personal_support',
+            text: 'Как учитель поддерживал вас лично?',
+            type: 'textarea',
+            placeholder: 'Помощь в трудностях, вера в способности... (минимум 60 слов)',
+            required: true
+          },
+          {
+            id: 'memorable_moments',
+            text: 'Самые запоминающиеся моменты с учителем',
+            type: 'textarea',
+            placeholder: 'Уроки, беседы, ситуации которые помните... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'gratitude_words',
+            text: 'Слова благодарности учителю',
+            type: 'textarea',
+            placeholder: 'За что благодарны, как повлиял на вашу жизнь... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии из учебных лет',
+            type: 'file',
+            required: false
+          }
+        ]
       }
     ]
   },
   {
-    id: 'travel',
-    title: 'Книга путешествий',
-    description: 'Ваши приключения',
-    icon: Sparkles,
-    price: '2,790₽',
-    questions: [
+    id: 'special',
+    title: 'Особые случаи',
+    description: 'Для особенных событий',
+    icon: Star,
+    color: 'from-purple-500 to-pink-500',
+    recipients: [
       {
-        id: 'travel_companion',
-        text: 'С кем путешествовали?',
-        type: 'text',
-        placeholder: 'Один, с партнером, семьей, друзьями...',
-        required: true
+        id: 'anniversary',
+        title: 'На юбилей',
+        description: 'Книга-поздравление к юбилею',
+        price: '3,990₽',
+        questions: [
+          {
+            id: 'celebrant_name',
+            text: 'Имя юбиляра',
+            type: 'text',
+            placeholder: 'Полное имя именинника',
+            required: true
+          },
+          {
+            id: 'anniversary_age',
+            text: 'Какой юбилей празднуете?',
+            type: 'text',
+            placeholder: '50 лет, 60 лет...',
+            required: true
+          },
+          {
+            id: 'relationship_to_celebrant',
+            text: 'Кем вы приходитесь юбиляру?',
+            type: 'text',
+            placeholder: 'Сын/дочь, внук/внучка, друг...',
+            required: true
+          },
+          {
+            id: 'life_achievements',
+            text: 'Главные достижения юбиляра в жизни',
+            type: 'textarea',
+            placeholder: 'Карьера, семья, достижения которыми гордитесь... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'character_qualities',
+            text: 'Выдающиеся качества характера',
+            type: 'textarea',
+            placeholder: 'Мудрость, доброта, сила духа... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'memorable_stories',
+            text: 'Самые яркие истории из жизни юбиляра',
+            type: 'textarea',
+            placeholder: 'Интересные случаи, проявления характера... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'impact_on_others',
+            text: 'Как юбиляр повлиял на жизнь других людей?',
+            type: 'textarea',
+            placeholder: 'Помощь, поддержка, пример для подражания... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'congratulations',
+            text: 'Поздравления и пожелания',
+            type: 'textarea',
+            placeholder: 'Теплые слова, пожелания на будущее... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии юбиляра разных лет',
+            type: 'file',
+            required: true
+          }
+        ]
       },
       {
-        id: 'destination',
-        text: 'Куда ездили?',
-        type: 'text',
-        placeholder: 'Страны, города, регионы...',
-        required: true
-      },
-      {
-        id: 'travel_motivation',
-        text: 'Что вдохновило на это путешествие?',
-        type: 'textarea',
-        placeholder: 'Мечта, случайность, особый повод... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'preparation',
-        text: 'Как готовились к поездке?',
-        type: 'textarea',
-        placeholder: 'Планирование, сборы, ожидания... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'first_impressions',
-        text: 'Первые впечатления от места',
-        type: 'textarea',
-        placeholder: 'Что увидели, почувствовали, услышали по прибытии... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'best_moments',
-        text: 'Самые яркие моменты путешествия',
-        type: 'textarea',
-        placeholder: 'То, что запомнится навсегда... (минимум 80 слов)',
-        required: true
-      },
-      {
-        id: 'local_culture',
-        text: 'Знакомство с местной культурой',
-        type: 'textarea',
-        placeholder: 'Традиции, еда, люди которые встретили... (минимум 70 слов)',
-        required: true
-      },
-      {
-        id: 'unexpected_adventures',
-        text: 'Неожиданные приключения и сюрпризы',
-        type: 'textarea',
-        placeholder: 'То, что не планировали, но случилось... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'challenges',
-        text: 'Трудности и как их преодолевали',
-        type: 'textarea',
-        placeholder: 'Проблемы в пути и как справлялись... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'personal_growth',
-        text: 'Как путешествие изменило вас?',
-        type: 'textarea',
-        placeholder: 'Новые взгляды, открытия о себе и мире... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'travel_wisdom',
-        text: 'Какие уроки дало это путешествие?',
-        type: 'textarea',
-        placeholder: 'Жизненная мудрость, полученная в дороге... (минимум 60 слов)',
-        required: true
-      },
-      {
-        id: 'future_travels',
-        text: 'Планы на будущие путешествия',
-        type: 'textarea',
-        placeholder: 'Куда хотите поехать дальше и почему... (минимум 50 слов)',
-        required: true
-      },
-      {
-        id: 'travel_photos',
-        text: 'Загрузите лучшие фотографии из путешествия',
-        type: 'file',
-        required: true
+        id: 'self',
+        title: 'Для себя',
+        description: 'Автобиографическая книга',
+        price: '3,490₽',
+        questions: [
+          {
+            id: 'my_name',
+            text: 'Ваше полное имя',
+            type: 'text',
+            placeholder: 'Как хотите назвать себя в книге',
+            required: true
+          },
+          {
+            id: 'life_period',
+            text: 'Какой период жизни описываете?',
+            type: 'text',
+            placeholder: 'Всю жизнь, последние годы, детство...',
+            required: true
+          },
+          {
+            id: 'early_memories',
+            text: 'Самые ранние воспоминания',
+            type: 'textarea',
+            placeholder: 'Детство, семья, дом где выросли... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'turning_points',
+            text: 'Поворотные моменты в жизни',
+            type: 'textarea',
+            placeholder: 'Решения которые изменили все, важные события... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'achievements',
+            text: 'Чем гордитесь в жизни?',
+            type: 'textarea',
+            placeholder: 'Достижения, преодоленные трудности... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'important_people',
+            text: 'Люди, которые повлияли на вашу жизнь',
+            type: 'textarea',
+            placeholder: 'Семья, учителя, друзья, наставники... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'life_lessons',
+            text: 'Главные уроки жизни',
+            type: 'textarea',
+            placeholder: 'Мудрость которую приобрели с опытом... (минимум 80 слов)',
+            required: true
+          },
+          {
+            id: 'dreams_goals',
+            text: 'Мечты и цели на будущее',
+            type: 'textarea',
+            placeholder: 'Планы, к чему стремитесь... (минимум 70 слов)',
+            required: true
+          },
+          {
+            id: 'self_reflection',
+            text: 'Размышления о себе и жизни',
+            type: 'textarea',
+            placeholder: 'Философские мысли, что поняли о себе... (минимум 90 слов)',
+            required: true
+          },
+          {
+            id: 'photos',
+            text: 'Загрузите фотографии из разных периодов жизни',
+            type: 'file',
+            required: true
+          }
+        ]
       }
     ]
   }
@@ -758,8 +1054,9 @@ export default function CreateBook() {
   const router = useRouter();
   const { saveBook, setIsBookLoading } = useBook();
   
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<BookCategory | ''>('');
+  const [selectedRecipient, setSelectedRecipient] = useState<BookRecipient | ''>('');
+  const [currentStep, setCurrentStep] = useState(0); // 0 = category, 1 = recipient, 2+ = questions
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -770,18 +1067,27 @@ export default function CreateBook() {
     maxTotalSize: 40 * 1024 * 1024 // 40MB общий лимит
   });
 
-  const currentBookType = bookTypes.find(bt => bt.id === selectedType);
-  const totalSteps = currentBookType ? currentBookType.questions.length + 2 : 2;
+  const currentCategory = bookCategories.find(cat => cat.id === selectedCategory);
+  const currentRecipientOption = currentCategory?.recipients.find(rec => rec.id === selectedRecipient);
+  const totalSteps = currentRecipientOption ? currentRecipientOption.questions.length + 3 : 3; // +3 для category, recipient, finish
 
   useEffect(() => {
     setForceUpdate(prev => prev + 1);
   }, [imageUpload.imageState.hasImages, imageUpload.imageState.count, imageUpload.imageState.isValid]);
 
-  const handleTypeSelect = (typeId: string) => {
-    setSelectedType(typeId);
+  const handleCategorySelect = (categoryId: BookCategory) => {
+    setSelectedCategory(categoryId);
+    setSelectedRecipient('');
     setAnswers({});
     imageUpload.clearImages();
     setCurrentStep(1);
+  };
+
+  const handleRecipientSelect = (recipientId: BookRecipient) => {
+    setSelectedRecipient(recipientId);
+    setAnswers({});
+    imageUpload.clearImages();
+    setCurrentStep(2);
   };
 
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -792,29 +1098,47 @@ export default function CreateBook() {
   };
 
   const getCurrentQuestion = (): Question | null => {
-    if (!currentBookType || currentStep === 0 || currentStep >= totalSteps) return null;
-    return currentBookType.questions[currentStep - 1];
+    if (!currentRecipientOption || currentStep < 2) return null;
+    const questionIndex = currentStep - 2;
+    return currentRecipientOption.questions[questionIndex] || null;
   };
 
   const isStepComplete = (): boolean => {
-    if (currentStep === 0) return selectedType !== '';
+    if (currentStep === 0) return selectedCategory !== '';
+    if (currentStep === 1) return selectedRecipient !== '';
     
     const question = getCurrentQuestion();
     if (!question) return true;
     
     if (question.type === 'file') {
-      const hasImages = imageUpload.imageState.hasImages;
-      return !question.required || hasImages;
+      return !question.required || imageUpload.imageState.hasImages;
     } else {
       const answer = answers[question.id];
-      return question.required ? !!answer && answer !== '' : true;
+      return !question.required || (!!answer && answer.trim() !== '');
     }
   };
 
   const handleNext = async () => {
+    if (currentStep === 0) {
+      // Переход к выбору получателя
+      if (selectedCategory) {
+        setCurrentStep(1);
+      }
+      return;
+    }
+
+    if (currentStep === 1) {
+      // Переход к вопросам
+      if (selectedRecipient) {
+        setCurrentStep(2);
+      }
+      return;
+    }
+
     const currentQuestion = getCurrentQuestion();
     const stepComplete = isStepComplete();
 
+    // Проверяем последний вопрос
     if (currentStep === totalSteps - 2) {
       if (currentQuestion?.required && !stepComplete) {
         if (currentQuestion?.type === 'file') {
@@ -826,6 +1150,7 @@ export default function CreateBook() {
         return;
       }
 
+      // Генерируем книгу
       setIsGenerating(true);
       setIsBookLoading(true);
       
@@ -849,7 +1174,8 @@ export default function CreateBook() {
         }
         
         const apiData = {
-          bookType: selectedType,
+          category: selectedCategory,
+          recipient: selectedRecipient,
           answers: answers,
           images: processedImages.length > 0 ? processedImages : []
         };
@@ -893,6 +1219,7 @@ export default function CreateBook() {
       }
       
     } else if (currentStep < totalSteps - 2) {
+      // Переход к следующему вопросу
       if (!stepComplete) {
         if (currentQuestion?.type === 'file') {
           const error = imageUpload.getImageValidationError();
@@ -915,11 +1242,7 @@ export default function CreateBook() {
     }
   };
 
-  const handleViewBook = () => {
-    router.push('/book');
-  };
-
-  // Экран выбора типа книги
+  // Экран выбора категории
   if (currentStep === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
@@ -935,40 +1258,104 @@ export default function CreateBook() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Создайте вашу персональную книгу
+              Выберите категорию книги
             </h1>
             <p className="text-xl text-gray-600">
-              Выберите тип книги, которую хотите создать
+              Какую историю хотите рассказать?
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {bookTypes.map((type) => {
-              const IconComponent = type.icon;
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bookCategories.map((category) => {
+              const IconComponent = category.icon;
               return (
                 <div
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border-2 border-transparent hover:border-purple-300"
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category.id)}
+                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border-2 border-transparent hover:border-purple-300 group"
                 >
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className={`w-16 h-16 bg-gradient-to-r ${category.color} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
                       <IconComponent className="h-8 w-8 text-white" />
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      {type.title}
+                      {category.title}
                     </h3>
-                    <p className="text-gray-600 mb-4">{type.description}</p>
-                    <div className="text-2xl font-bold text-purple-600 mb-4">
-                      {type.price}
+                    <p className="text-gray-600 mb-4">{category.description}</p>
+                    <div className="text-sm text-purple-600 mb-4">
+                      {category.recipients.length} вариантов получателей
                     </div>
-                    <button className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all">
+                    <div className="flex items-center justify-center text-purple-600 text-sm font-medium">
                       Выбрать
-                    </button>
+                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Экран выбора получателя
+  if (currentStep === 1) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+        <header className="container mx-auto px-4 py-6">
+          <Link href="/" className="flex items-center space-x-2">
+            <Sparkles className="w-8 h-8 text-purple-600" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              VeloraBook
+            </h1>
+          </Link>
+        </header>
+
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <button
+              onClick={() => setCurrentStep(0)}
+              className="flex items-center text-gray-600 hover:text-gray-800 mb-4 mx-auto"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {currentCategory?.title}
+            </button>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Для кого создаем книгу?
+            </h1>
+            <p className="text-xl text-gray-600">
+              Выберите получателя подарка
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {currentCategory?.recipients.map((recipient) => (
+              <div
+                key={recipient.id}
+                onClick={() => handleRecipientSelect(recipient.id)}
+                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl cursor-pointer transform hover:-translate-y-1 transition-all duration-200 border-2 border-transparent hover:border-purple-300 group"
+              >
+                <div className="text-center">
+                  <div className={`w-12 h-12 bg-gradient-to-r ${currentCategory.color} rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
+                    <currentCategory.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {recipient.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {recipient.description}
+                  </p>
+                  <div className="text-lg font-bold text-purple-600 mb-4">
+                    {recipient.price}
+                  </div>
+                  <div className="flex items-center justify-center text-purple-600 text-sm font-medium">
+                    Выбрать
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1007,7 +1394,7 @@ export default function CreateBook() {
           </p>
           
           <div className="mt-4 space-y-2 text-xs text-gray-400">
-            <div>🧠 Анализируем 20+ детальных ответов</div>
+            <div>🧠 Анализируем детальные ответы</div>
             {hasImages && <div>📸 Обрабатываем изображения с помощью ИИ</div>}
             <div>✍️ Создаем объемную персональную историю</div>
             <div>📖 Форматируем книгу с множественными главами</div>
@@ -1018,88 +1405,15 @@ export default function CreateBook() {
     );
   }
 
-  // Финальный экран
-  if (currentStep >= totalSteps) {
-    const hasImages = imageUpload.imageState.hasImages;
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Ваша книга готова! 🎉
-            </h2>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">Что включено в книгу:</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center justify-center space-x-2">
-                  <span>📝</span>
-                  <span>Объемная персональная история 4000-6000 слов</span>
-                </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <span>📚</span>
-                  <span>4-6 детально проработанных глав</span>
-                </div>
-                {hasImages && (
-                  <div className="flex items-center justify-center space-x-2">
-                    <span>📸</span>
-                    <span>
-                      {imageUpload.imageState.count} изображений проанализированы ИИ и включены в повествование
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-center space-x-2">
-                  <span>🎨</span>
-                  <span>Красивое оформление с 3D-обложкой</span>
-                </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <span>⚡</span>
-                  <span>Создано с помощью GPT-4 Turbo</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <button 
-                onClick={handleViewBook}
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 px-6 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-semibold"
-              >
-                🎯 Просмотреть книгу
-              </button>
-              <button className="w-full border border-purple-500 text-purple-500 py-3 px-6 rounded-lg hover:bg-purple-50 transition-all">
-                📦 Заказать печатную версию
-              </button>
-              <Link href="/">
-                <button className="w-full text-gray-500 py-2 px-4 rounded-lg hover:text-gray-700 transition-all">
-                  ← Создать еще одну книгу
-                </button>
-              </Link>
-            </div>
-            
-            {hasImages && (
-              <div className="mt-6 text-xs text-gray-500">
-                💡 Совет: Ваши изображения были автоматически обработаны для интеграции в полноценную книгу
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Экран вопроса
   const question = getCurrentQuestion();
-  if (!question || !currentBookType) return null;
+  if (!question || !currentRecipientOption) return null;
 
   const stepComplete = isStepComplete();
   const buttonDisabled = !stepComplete;
+  const questionNumber = currentStep - 1;
+  const totalQuestions = currentRecipientOption.questions.length;
 
-  // Экран вопроса
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <header className="container mx-auto px-4 py-6">
@@ -1115,17 +1429,23 @@ export default function CreateBook() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-600">
-              Вопрос {currentStep} из {totalSteps - 2}
+              Вопрос {questionNumber} из {totalQuestions}
             </span>
             <span className="text-sm text-gray-600">
-              {Math.round((currentStep / (totalSteps - 2)) * 100)}% завершено
+              {Math.round((questionNumber / totalQuestions) * 100)}% завершено
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / (totalSteps - 2)) * 100}%` }}
+              style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
             ></div>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <span className="text-sm text-purple-600 font-medium">
+              {currentCategory?.title} › {currentRecipientOption.title}
+            </span>
           </div>
         </div>
 
@@ -1189,7 +1509,7 @@ export default function CreateBook() {
           <button
             onClick={handlePrev}
             className="flex items-center px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
-            disabled={currentStep === 1}
+            disabled={currentStep === 2}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад

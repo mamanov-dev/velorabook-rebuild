@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { Sparkles, Star, Clock, Globe, Heart, Users, BookOpen, ArrowRight, User, LogOut, Settings } from 'lucide-react'
+import { Sparkles, Star, Clock, Globe, Heart, Users, BookOpen, ArrowRight, User, LogOut, Settings, Briefcase, GraduationCap, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -25,7 +25,7 @@ export default function Home() {
           </Link>
           <nav className="hidden md:flex space-x-6 items-center">
             <a href="#how-it-works" className="text-gray-600 hover:text-purple-600">Как работает</a>
-            <a href="#book-types" className="text-gray-600 hover:text-purple-600">Примеры</a>
+            <a href="#book-types" className="text-gray-600 hover:text-purple-600">Типы книг</a>
             <a href="#pricing" className="text-gray-600 hover:text-purple-600">Цены</a>
             
             {status === 'loading' ? (
@@ -96,8 +96,8 @@ export default function Home() {
             <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> ИИ</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Ваши истории станут уникальным подарком, который будут хранить всю жизнь. 
-            Просто ответьте на вопросы, загрузите фото — ИИ создаст книгу за 15 минут.
+            Выберите из 20+ вариантов персональных книг для любой ситуации. 
+            От романтических историй до профессиональных благодарностей — ИИ создаст уникальную книгу за 15 минут.
           </p>
 
           {/* Stats */}
@@ -143,80 +143,199 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Book Types */}
+      {/* ✨ ОБНОВЛЕННАЯ СЕКЦИЯ ТИПОВ КНИГ */}
       <section id="book-types" className="container mx-auto px-4 py-16">
-        <h3 className="text-3xl font-bold text-center text-gray-800 mb-12">
-          Выберите тип вашей книги
+        <h3 className="text-3xl font-bold text-center text-gray-800 mb-4">
+          20+ типов персональных книг
         </h3>
+        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
+          Выберите категорию, затем конкретного получателя. Каждая комбинация имеет уникальные вопросы и стиль повествования.
+        </p>
         
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Romantic Book */}
-          <Link href={session ? "/create?type=romantic" : "/auth/signin?callbackUrl=/create?type=romantic"}>
-            <div className="group bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 cursor-pointer">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Heart className="w-8 h-8 text-white" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+          {/* Романтические книги */}
+          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center mb-6">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Романтические книги</h4>
+            <p className="text-gray-600 mb-4">Для любимых людей</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-pink-400 rounded-full mr-2"></span>
+                Для девушки • 2,990₽
               </div>
-              <h4 className="text-xl font-semibold text-gray-800 mb-3">Романтическая книга</h4>
-              <p className="text-gray-600 mb-4">Для второй половинки</p>
-              <ul className="text-sm text-gray-500 space-y-1 mb-6">
-                <li>• AI-генерация романтического текста</li>
-                <li>• Красивый дизайн</li>
-                <li>• Фотоколлажи ваших моментов</li>
-              </ul>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  15 мин
-                </span>
-                <span className="text-lg font-bold text-purple-600">2,990₽</span>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-pink-400 rounded-full mr-2"></span>
+                Для парня • 2,990₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-pink-400 rounded-full mr-2"></span>
+                Для жены • 3,490₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-pink-400 rounded-full mr-2"></span>
+                Для мужа • 3,490₽
               </div>
             </div>
-          </Link>
+            
+            <Link href={session ? "/create" : "/auth/signin?callbackUrl=/create"}>
+              <button className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white py-3 px-4 rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all">
+                Выбрать →
+              </button>
+            </Link>
+          </div>
 
-          {/* Family Book */}
-          <Link href={session ? "/create?type=family" : "/auth/signin?callbackUrl=/create?type=family"}>
-            <div className="group bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 cursor-pointer">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Users className="w-8 h-8 text-white" />
+          {/* Семейные книги */}
+          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Семейные книги</h4>
+            <p className="text-gray-600 mb-4">Для родных и близких</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                Для мамы/папы • 3,490₽
               </div>
-              <h4 className="text-xl font-semibold text-gray-800 mb-3">Семейная история</h4>
-              <p className="text-gray-600 mb-4">Для родителей или детей</p>
-              <ul className="text-sm text-gray-500 space-y-1 mb-6">
-                <li>• Семейное древо</li>
-                <li>• Временная шкала событий</li>
-                <li>• Архив семейных фото</li>
-              </ul>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  20 мин
-                </span>
-                <span className="text-lg font-bold text-purple-600">3,990₽</span>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                Для дочери/сына • 3,490₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                Для бабушки/дедушки • 3,490₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                Для сестры/брата • 3,490₽
               </div>
             </div>
-          </Link>
+            
+            <Link href={session ? "/create" : "/auth/signin?callbackUrl=/create"}>
+              <button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all">
+                Выбрать →
+              </button>
+            </Link>
+          </div>
 
-          {/* Friendship Book */}
-          <Link href={session ? "/create?type=friendship" : "/auth/signin?callbackUrl=/create?type=friendship"}>
-            <div className="group bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 cursor-pointer">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <BookOpen className="w-8 h-8 text-white" />
+          {/* Дружеские книги */}
+          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Дружеские книги</h4>
+            <p className="text-gray-600 mb-4">Для лучших друзей</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                Для лучшей подруги • 2,490₽
               </div>
-              <h4 className="text-xl font-semibold text-gray-800 mb-3">Книга дружбы</h4>
-              <p className="text-gray-600 mb-4">Для лучшего друга</p>
-              <ul className="text-sm text-gray-500 space-y-1 mb-6">
-                <li>• Хронология дружбы</li>
-                <li>• Веселые моменты</li>
-                <li>• Совместные фотографии</li>
-              </ul>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  12 мин
-                </span>
-                <span className="text-lg font-bold text-purple-600">2,490₽</span>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                Для лучшего друга • 2,490₽
               </div>
             </div>
+            
+            <Link href={session ? "/create" : "/auth/signin?callbackUrl=/create"}>
+              <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all">
+                Выбрать →
+              </button>
+            </Link>
+          </div>
+
+          {/* Профессиональные книги */}
+          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mb-6">
+              <Briefcase className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Профессиональные</h4>
+            <p className="text-gray-600 mb-4">Для работы и карьеры</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                Для коллеги • 2,790₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                Для начальника • 2,990₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                Для наставника • 2,990₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                Для учителя • 2,990₽
+              </div>
+            </div>
+            
+            <Link href={session ? "/create" : "/auth/signin?callbackUrl=/create"}>
+              <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all">
+                Выбрать →
+              </button>
+            </Link>
+          </div>
+
+          {/* Особые случаи */}
+          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6">
+              <Star className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Особые случаи</h4>
+            <p className="text-gray-600 mb-4">Для уникальных событий</p>
+            
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                На юбилей • 3,990₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                Для себя • 3,490₽
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                На свадьбу • 3,990₽
+              </div>
+            </div>
+            
+            <Link href={session ? "/create" : "/auth/signin?callbackUrl=/create"}>
+              <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all">
+                Выбрать →
+              </button>
+            </Link>
+          </div>
+
+          {/* Попробовать демо */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-dashed border-amber-300">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-xl font-semibold text-gray-800 mb-3">Попробовать демо</h4>
+            <p className="text-gray-600 mb-6">Посмотрите пример готовой книги</p>
+            
+            <Link href="/book">
+              <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 px-4 rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all">
+                Демо книга →
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Дополнительная информация */}
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">
+            <strong>Новая система:</strong> Выберите категорию → Выберите получателя → Персонализированные вопросы
+          </p>
+          <Link href="/create">
+            <button className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
+              Начать создание книги
+            </button>
           </Link>
         </div>
       </section>
@@ -233,24 +352,24 @@ export default function Home() {
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-purple-600 font-bold">1</span>
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2">Выберите тип</h4>
-              <p className="text-sm text-gray-600">Романтика, семья или дружба</p>
+              <h4 className="font-semibold text-gray-800 mb-2">Выберите категорию</h4>
+              <p className="text-sm text-gray-600">Романтика, семья, дружба, работа или особый случай</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-purple-600 font-bold">2</span>
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2">Ответьте на вопросы</h4>
-              <p className="text-sm text-gray-600">ИИ задаст персональные вопросы</p>
+              <h4 className="font-semibold text-gray-800 mb-2">Выберите получателя</h4>
+              <p className="text-sm text-gray-600">Конкретный человек из 20+ вариантов</p>
             </div>
             
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-purple-600 font-bold">3</span>
               </div>
-              <h4 className="font-semibold text-gray-800 mb-2">Загрузите фото</h4>
-              <p className="text-sm text-gray-600">Добавьте ваши лучшие моменты</p>
+              <h4 className="font-semibold text-gray-800 mb-2">Ответьте на вопросы</h4>
+              <p className="text-sm text-gray-600">Персонализированные под тип отношений</p>
             </div>
             
             <div className="text-center">
@@ -258,7 +377,7 @@ export default function Home() {
                 <span className="text-purple-600 font-bold">4</span>
               </div>
               <h4 className="font-semibold text-gray-800 mb-2">Получите книгу</h4>
-              <p className="text-sm text-gray-600">ИИ создаст уникальную историю</p>
+              <p className="text-sm text-gray-600">ИИ создаст уникальную историю за 15 минут</p>
             </div>
           </div>
 
@@ -277,10 +396,10 @@ export default function Home() {
         <section className="bg-gradient-to-r from-purple-600 to-blue-600 py-16 text-white">
           <div className="container mx-auto px-4 text-center">
             <h3 className="text-3xl font-bold mb-4">
-              Готовы создать свою уникальную книгу?
+              Готовы создать уникальную персональную книгу?
             </h3>
             <p className="text-xl mb-8 opacity-90">
-              Зарегистрируйтесь сейчас и получите доступ ко всем возможностям VeloraBook
+              Выберите из 20+ вариантов и создайте идеальный подарок за 15 минут
             </p>
             <div className="flex justify-center space-x-4">
               <Link href="/auth/signup">
@@ -308,7 +427,7 @@ export default function Home() {
                 <span className="text-xl font-bold">VeloraBook</span>
               </div>
               <p className="text-gray-400">
-                Создавайте персональные книги с помощью ИИ
+                Создавайте персональные книги с помощью ИИ. 20+ типов для любой ситуации.
               </p>
             </div>
             
@@ -316,8 +435,9 @@ export default function Home() {
               <h5 className="font-semibold mb-4">Продукт</h5>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#how-it-works" className="hover:text-white">Как работает</a></li>
-                <li><a href="#book-types" className="hover:text-white">Примеры</a></li>
+                <li><a href="#book-types" className="hover:text-white">Типы книг</a></li>
                 <li><a href="#pricing" className="hover:text-white">Цены</a></li>
+                <li><Link href="/book" className="hover:text-white">Демо</Link></li>
               </ul>
             </div>
             
