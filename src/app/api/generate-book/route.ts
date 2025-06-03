@@ -18,7 +18,7 @@ function checkRateLimit(userId: string): boolean {
   const maxRequests = 3 // 3 книги в час
 
   const userStats = requestCounts.get(userId)
-  
+
   if (!userStats || now > userStats.resetTime) {
     requestCounts.set(userId, { count: 1, resetTime: now + windowMs })
     return true
@@ -63,7 +63,7 @@ interface BookContent {
 // ✨ НОВАЯ СИСТЕМА ПРОМПТОВ ДЛЯ КАЖДОЙ КОМБИНАЦИИ
 const getBookPrompt = (category: BookCategory, recipient: BookRecipient): string => {
   const typeKey = BookTypeUtils.createBookTypeKey(category, recipient);
-  
+
   const bookPrompts: Record<string, string> = {
     // 💝 РОМАНТИЧЕСКИЕ КНИГИ
     'romantic-girlfriend': `СОЗДАЙ МАКСИМАЛЬНО ПОДРОБНУЮ РОМАНТИЧЕСКУЮ КНИГУ ДЛЯ ДЕВУШКИ из ТОЧНО 5 ДЛИННЫХ глав.
@@ -299,7 +299,7 @@ const getBookPrompt = (category: BookCategory, recipient: BookRecipient): string
 async function generateBookContent(
   category: BookCategory,
   recipient: BookRecipient,
-  answers: Record<string, string>, 
+  answers: Record<string, string>,
   images: any[] = []
 ): Promise<BookContent> {
   if (!openai) {
@@ -315,7 +315,7 @@ async function generateBookContent(
     .join('\n')
 
   // Информация об изображениях
-  const imageContext = images.length > 0 
+  const imageContext = images.length > 0
     ? `\n\nВ книге есть ${images.length} изображений. Органично включи описания этих фотографий в повествование, как будто они иллюстрируют моменты из истории.`
     : ''
 
@@ -345,7 +345,7 @@ ${answersText}${imageContext}
           content: "Ты профессиональный писатель, создающий персональные книги. Всегда отвечай валидным JSON."
         },
         {
-          role: "user", 
+          role: "user",
           content: fullPrompt
         }
       ],
@@ -368,7 +368,7 @@ ${answersText}${imageContext}
     // Находим границы JSON объекта
     const firstBrace = cleanContent.indexOf('{')
     const lastBrace = cleanContent.lastIndexOf('}')
-    const jsonContent = (firstBrace !== -1 && lastBrace !== -1) 
+    const jsonContent = (firstBrace !== -1 && lastBrace !== -1)
       ? cleanContent.substring(firstBrace, lastBrace + 1)
       : cleanContent
 
@@ -387,7 +387,7 @@ ${answersText}${imageContext}
       chapters: bookData.chapters,
       totalChapters: bookData.chapters.length,
       estimatedReadTime: Math.ceil(
-        bookData.chapters.reduce((total: number, chapter: any) => 
+        bookData.chapters.reduce((total: number, chapter: any) =>
           total + (chapter.content?.length || 0), 0
         ) / 1000 // Примерно 1000 символов в минуту
       ),
@@ -398,7 +398,7 @@ ${answersText}${imageContext}
         category,
         recipient,
         generatedAt: new Date().toISOString(),
-        wordCount: bookData.chapters.reduce((total: number, chapter: any) => 
+        wordCount: bookData.chapters.reduce((total: number, chapter: any) =>
           total + (chapter.content?.split(' ').length || 0), 0
         ),
         imagesCount: images.length,
@@ -411,9 +411,99 @@ ${answersText}${imageContext}
   }
 }
 
+// ✨ НОВАЯ ФУНКЦИЯ: Сохранение книги в базу данных
+async function saveBookToDatabase(
+  userId: string,
+  bookContent: BookContent,
+  answers: Record<string, string>,
+  images: any[] = []
+) {
+  if (!serviceAvailability.database) {
+    console.warn('⚠️ Database not available, skipping save')
+    return null
+  }
+
+  try {
+    const { prisma } = await import('@/lib/prisma')
+
+    // Создаем книгу в транзакции
+    const savedBook = await prisma.$transaction(async (tx) => {
+      // 1. Создаем основную запись книги
+      const book = await tx.book.create({
+        data: {
+          title: bookContent.title,
+          category: bookContent.category,
+          recipient: bookContent.recipient,
+          bookType: `${bookContent.category}-${bookContent.recipient}`, // для обратной совместимости
+          status: 'COMPLETED',
+          // ✅ ИСПРАВЛЕНО: Приводим к JSON-совместимому формату
+          content: JSON.parse(JSON.stringify({
+            title: bookContent.title,
+            chapters: bookContent.chapters,
+            images: bookContent.images || []
+          })),
+          metadata: JSON.parse(JSON.stringify(bookContent.metadata)),
+          answers: JSON.parse(JSON.stringify(answers)),
+          totalChapters: bookContent.totalChapters,
+          estimatedReadTime: bookContent.estimatedReadTime,
+          author: bookContent.author,
+          userId: userId,
+          publishedAt: new Date()
+        }
+      })
+
+      // 2. Создаем главы
+      if (bookContent.chapters && bookContent.chapters.length > 0) {
+        await tx.bookChapter.createMany({
+          data: bookContent.chapters.map((chapter: any) => ({
+            bookId: book.id,
+            number: chapter.number,
+            title: chapter.title,
+            content: chapter.content,
+            epigraph: chapter.epigraph || null
+          }))
+        })
+      }
+
+      // 3. Сохраняем информацию об изображениях (если есть)
+      if (images && images.length > 0) {
+        await tx.bookImage.createMany({
+          data: images.map((img: any, index: number) => ({
+            bookId: book.id,
+            userId: userId,
+            originalName: img.name,
+            fileName: `book-${book.id}-img-${index}`,
+            fileSize: img.size,
+            mimeType: 'image/jpeg',
+            width: img.dimensions.width,
+            height: img.dimensions.height,
+            storageUrl: img.base64, // Временно сохраняем base64, потом можно заменить на CDN
+            caption: `Изображение ${index + 1}`,
+            description: `Персональное изображение для книги`,
+            isProcessed: true,
+            compressed: img.compressed || false,
+            originalSize: img.size,
+            compressedSize: img.size
+          }))
+        })
+      }
+
+      return book
+    })
+
+    console.log(`✅ Book saved to database: ${savedBook.id}`)
+    return savedBook
+
+  } catch (error) {
+    console.error('❌ Database save error:', error)
+    // Не останавливаем процесс если БД недоступна
+    return null
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     // Проверяем авторизацию
     const session = await auth()
@@ -443,7 +533,7 @@ export async function POST(request: NextRequest) {
     // ✅ Парсим и валидируем данные запроса с новой схемой
     const body = await request.json()
     const validatedData = validateWithSchema(GenerateBookSchema, body)
-    
+
     console.log(`📚 Generating ${validatedData.category}-${validatedData.recipient} book for user ${session.user.email}`)
 
     // Генерируем книгу с новыми параметрами
@@ -465,16 +555,26 @@ export async function POST(request: NextRequest) {
       }))
     }
 
-    const duration = Date.now() - startTime
-    console.log(`✅ Book generated in ${duration}ms`)
+    // ✨ НОВОЕ: Сохраняем книгу в базу данных
+    const savedBook = await saveBookToDatabase(
+      session.user.id,
+      bookContent,
+      validatedData.answers,
+      validatedData.images || []
+    )
 
-    // Возвращаем успешный результат
+    const duration = Date.now() - startTime
+    console.log(`✅ Book generated and saved in ${duration}ms`)
+
+    // Возвращаем успешный результат с ID сохраненной книги
     return NextResponse.json({
       success: true,
       book: bookContent,
+      bookId: savedBook?.id, // ID в базе данных
       metadata: {
         generationTime: duration,
         timestamp: new Date().toISOString(),
+        savedToDatabase: !!savedBook
       }
     })
 
